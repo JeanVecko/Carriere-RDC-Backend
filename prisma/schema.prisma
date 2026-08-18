@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CANDIDATE
+  COMPANY
+  TRAINING_ORG
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  VALIDATED
+  SUSPENDED
+}
+
+enum Plan {
+  FREE
+  MONTHLY
+  YEARLY
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum TrainingModality {
+  ONSITE
+  ONLINE
+  HYBRID
+}
+
+enum AtsResult {
+  MATCH
+  PARTIAL
+  NO_MATCH
+}
+
+enum ApplicationStatus {
+  RECEIVED
+  IN_PROGRESS
+  ACCEPTED
+  REJECTED
+}
+
+enum NewsletterStatus {
+  ACTIVE
+  UNSUBSCRIBED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         Role
+  status       UserStatus @default(PENDING)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  organization Organization?
+  applications Application[]
+
+  @@map("users")
+}
+
+model Organization {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  sector              String?
+  city               String?
+  description        String?
+  logoUrl            String?
+  isVerified         Boolean  @default(false)
+  plan               Plan     @default(FREE)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  jobOffers  JobOffer[]
+  tenders    Tender[]
+  trainings  Training[]
+
+  @@map("organizations")
+}
+
+model JobOffer {
+  id                     String        @id @default(cuid())
+  organizationId         String
+  organization           Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reference              String?
+  title                  String
+  sector                 String
+  city                   String
+  contractType           String
+  description            String
+  missions               Json          @default("[]")
+  atsCriteria            Json
+  preScreeningQuestions  Json          @default("[]")
+  publishedAt            DateTime?
+  deadline               DateTime?
+  status                 ListingStatus @default(DRAFT)
+  publishedByAdmin       Boolean       @default(false)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  applications Application[]
+
+  @@map("job_offers")
+}
+
+model Tender {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reference      String?
+  title          String
+  sector         String
+  serviceType    String
+  description    String
+  requiredDocs   Json          @default("[]")
+  deadline       DateTime?
+  status         ListingStatus @default(DRAFT)
+  publishedByAdmin Boolean     @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("tenders")
+}
+
+model Training {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  domain         String
+  objectives     String
+  program        String
+  duration       String
+  modality       TrainingModality
+  sessionDates   Json             @default("[]")
+  price          String?
+  location       String?
+  status         ListingStatus    @default(DRAFT)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@map("trainings")
+}
+
+model Application {
+  id            String            @id @default(cuid())
+  candidateId   String
+  candidate     User              @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobOfferId    String
+  jobOffer      JobOffer          @relation(fields: [jobOfferId], references: [id], onDelete: Cascade)
+  formAnswers   Json
+  cvUrl         String
+  atsResult     AtsResult
+  status        ApplicationStatus @default(RECEIVED)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([candidateId, jobOfferId])
+  @@map("applications")
+}
+
+model NewsletterSubscriber {
+  id           String           @id @default(cuid())
+  email        String           @unique
+  status       NewsletterStatus @default(ACTIVE)
+  subscribedAt DateTime         @default(now())
+
+  @@map("newsletter_subscribers")
+}
