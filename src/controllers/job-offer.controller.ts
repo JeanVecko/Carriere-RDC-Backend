@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/middleware/error-handler";
+import { param } from "@/lib/http";
 
 const atsCriteriaSchema = z.object({
   minEducationLevel: z.string(),
@@ -60,7 +61,7 @@ export async function listJobOffers(req: Request, res: Response) {
 
 export async function getJobOffer(req: Request, res: Response) {
   const jobOffer = await prisma.jobOffer.findUnique({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     include: { organization: true },
   });
 
@@ -101,11 +102,11 @@ async function assertOwnership(req: Request, jobOfferId: string) {
 }
 
 export async function updateJobOffer(req: Request, res: Response) {
-  await assertOwnership(req, req.params.id);
+  await assertOwnership(req, param(req, "id"));
   const data = jobOfferSchema.partial().parse(req.body);
 
   const jobOffer = await prisma.jobOffer.update({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     data: {
       ...data,
       publishedAt: data.status === "PUBLISHED" ? new Date() : undefined,
@@ -116,10 +117,10 @@ export async function updateJobOffer(req: Request, res: Response) {
 }
 
 export async function closeJobOffer(req: Request, res: Response) {
-  await assertOwnership(req, req.params.id);
+  await assertOwnership(req, param(req, "id"));
 
   const jobOffer = await prisma.jobOffer.update({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     data: { status: "CLOSED" },
   });
 

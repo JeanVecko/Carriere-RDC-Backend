@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/middleware/error-handler";
+import { param } from "@/lib/http";
 
 const tenderSchema = z.object({
   title: z.string().min(3),
@@ -41,7 +42,7 @@ export async function listTenders(req: Request, res: Response) {
 
 export async function getTender(req: Request, res: Response) {
   const tender = await prisma.tender.findUnique({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     include: { organization: true },
   });
   if (!tender) throw new ApiError(404, "Appel d'offres introuvable.");
@@ -61,7 +62,7 @@ export async function createTender(req: Request, res: Response) {
 
 export async function updateTender(req: Request, res: Response) {
   const tender = await prisma.tender.findUnique({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     include: { organization: true },
   });
   if (!tender) throw new ApiError(404, "Appel d'offres introuvable.");
@@ -70,6 +71,6 @@ export async function updateTender(req: Request, res: Response) {
   }
 
   const data = tenderSchema.partial().parse(req.body);
-  const updated = await prisma.tender.update({ where: { id: req.params.id }, data });
+  const updated = await prisma.tender.update({ where: { id: param(req, "id") }, data });
   res.json(updated);
 }

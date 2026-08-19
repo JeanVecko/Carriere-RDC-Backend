@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/middleware/error-handler";
+import { param } from "@/lib/http";
 
 const trainingSchema = z.object({
   title: z.string().min(3),
@@ -48,7 +49,7 @@ export async function listTrainings(req: Request, res: Response) {
 
 export async function getTraining(req: Request, res: Response) {
   const training = await prisma.training.findUnique({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     include: { organization: true },
   });
   if (!training) throw new ApiError(404, "Formation introuvable.");
@@ -65,7 +66,7 @@ export async function createTraining(req: Request, res: Response) {
 
 export async function updateTraining(req: Request, res: Response) {
   const training = await prisma.training.findUnique({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     include: { organization: true },
   });
   if (!training) throw new ApiError(404, "Formation introuvable.");
@@ -74,6 +75,6 @@ export async function updateTraining(req: Request, res: Response) {
   }
 
   const data = trainingSchema.partial().parse(req.body);
-  const updated = await prisma.training.update({ where: { id: req.params.id }, data });
+  const updated = await prisma.training.update({ where: { id: param(req, "id") }, data });
   res.json(updated);
 }

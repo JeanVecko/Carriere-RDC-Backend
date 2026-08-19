@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/middleware/error-handler";
+import { param } from "@/lib/http";
 
 const organizationSchema = z.object({
   name: z.string().min(2),
@@ -35,7 +36,7 @@ export async function getMyOrganization(req: Request, res: Response) {
 
 export async function getOrganization(req: Request, res: Response) {
   const organization = await prisma.organization.findUnique({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
   });
 
   if (!organization) throw new ApiError(404, "Organisation introuvable.");

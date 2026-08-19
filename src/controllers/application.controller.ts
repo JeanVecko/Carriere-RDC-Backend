@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/middleware/error-handler";
 import { scoreApplication, type AtsCriteria } from "@/lib/ats";
+import { param } from "@/lib/http";
 
 const applyFormSchema = z.object({
   educationLevel: z.string(),
@@ -13,7 +14,7 @@ const applyFormSchema = z.object({
 });
 
 export async function applyToJobOffer(req: Request, res: Response) {
-  const jobOffer = await prisma.jobOffer.findUnique({ where: { id: req.params.id } });
+  const jobOffer = await prisma.jobOffer.findUnique({ where: { id: param(req, "id") } });
   if (!jobOffer || jobOffer.status !== "PUBLISHED") {
     throw new ApiError(404, "Offre introuvable ou non publiée.");
   }
@@ -55,7 +56,7 @@ export async function applyToJobOffer(req: Request, res: Response) {
 
 export async function listApplicationsForJobOffer(req: Request, res: Response) {
   const jobOffer = await prisma.jobOffer.findUnique({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     include: { organization: true },
   });
 
@@ -65,7 +66,7 @@ export async function listApplicationsForJobOffer(req: Request, res: Response) {
   }
 
   const applications = await prisma.application.findMany({
-    where: { jobOfferId: req.params.id },
+    where: { jobOfferId: param(req, "id") },
     include: { candidate: { select: { id: true, name: true, email: true } } },
     // "Correspond" en tête de liste, comme décrit dans le cadrage (section 5.3).
     orderBy: [{ atsResult: "asc" }, { createdAt: "desc" }],
@@ -90,7 +91,7 @@ const updateStatusSchema = z.object({
 
 export async function updateApplicationStatus(req: Request, res: Response) {
   const application = await prisma.application.findUnique({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     include: { jobOffer: { include: { organization: true } } },
   });
 
@@ -102,7 +103,7 @@ export async function updateApplicationStatus(req: Request, res: Response) {
   const { status } = updateStatusSchema.parse(req.body);
 
   const updated = await prisma.application.update({
-    where: { id: req.params.id },
+    where: { id: param(req, "id") },
     data: { status },
   });
 

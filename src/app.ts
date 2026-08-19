@@ -13,6 +13,7 @@ import { tenderRouter } from "@/routes/tender.routes";
 import { trainingRouter } from "@/routes/training.routes";
 import { newsletterRouter } from "@/routes/newsletter.routes";
 import { adminRouter } from "@/routes/admin.routes";
+import { analyticsRouter } from "@/routes/analytics.routes";
 
 export const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api/tenders", tenderRouter);
 app.use("/api/trainings", trainingRouter);
 app.use("/api/newsletter", newsletterRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/analytics", analyticsRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

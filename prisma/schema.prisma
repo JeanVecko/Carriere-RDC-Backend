@@ -182,3 +182,11 @@ model NewsletterSubscriber {
 
   @@map("newsletter_subscribers")
 }
+
+model SiteVisit {
+  id        String   @id @default(cuid())
+  path      String?
+  createdAt DateTime @default(now())
+
+  @@map("site_visits")
+}
