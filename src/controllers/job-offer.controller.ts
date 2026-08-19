@@ -59,6 +59,21 @@ export async function listJobOffers(req: Request, res: Response) {
   res.json(jobOffers);
 }
 
+export async function listMyJobOffers(req: Request, res: Response) {
+  const organization = await prisma.organization.findUnique({
+    where: { userId: req.user!.id },
+  });
+  if (!organization) throw new ApiError(404, "Aucune organisation associée à ce compte.");
+
+  const jobOffers = await prisma.jobOffer.findMany({
+    where: { organizationId: organization.id },
+    include: { _count: { select: { applications: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  res.json(jobOffers);
+}
+
 export async function getJobOffer(req: Request, res: Response) {
   const jobOffer = await prisma.jobOffer.findUnique({
     where: { id: param(req, "id") },

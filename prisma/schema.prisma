@@ -66,10 +66,61 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  organization Organization?
-  applications Application[]
+  organization     Organization?
+  applications     Application[]
+  candidateProfile CandidateProfile?
 
   @@map("users")
+}
+
+model CandidateProfile {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  city      String?
+  birthDate DateTime?
+  bio       String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  experiences Experience[]
+  documents   CandidateDocument[]
+
+  @@map("candidate_profiles")
+}
+
+enum DocumentType {
+  CV
+  DIPLOMA
+  CERTIFICATE
+}
+
+model CandidateDocument {
+  id        String           @id @default(cuid())
+  profileId String
+  profile   CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  type      DocumentType
+  fileUrl   String
+  fileName  String
+  createdAt DateTime         @default(now())
+
+  @@map("candidate_documents")
+}
+
+model Experience {
+  id          String           @id @default(cuid())
+  profileId   String
+  profile     CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title       String
+  company     String
+  startDate   DateTime
+  endDate     DateTime?
+  current     Boolean          @default(false)
+  description String?
+  createdAt   DateTime         @default(now())
+
+  @@map("experiences")
 }
 
 model Organization {
@@ -166,6 +217,7 @@ model Application {
   formAnswers   Json
   cvUrl         String
   atsResult     AtsResult
+  atsScore      Int               @default(0)
   status        ApplicationStatus @default(RECEIVED)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt

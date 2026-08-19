@@ -24,3 +24,28 @@ export const uploadCv = multer({
     cb(null, true);
   },
 });
+
+const documentDir = path.join(process.cwd(), "uploads", "documents");
+fs.mkdirSync(documentDir, { recursive: true });
+
+const documentStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, documentDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${unique}${path.extname(file.originalname)}`);
+  },
+});
+
+const ALLOWED_DOCUMENT_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+
+export const uploadDocument = multer({
+  storage: documentStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_DOCUMENT_MIME_TYPES.includes(file.mimetype)) {
+      cb(new Error("Le document doit être un fichier PDF, JPG ou PNG."));
+      return;
+    }
+    cb(null, true);
+  },
+});

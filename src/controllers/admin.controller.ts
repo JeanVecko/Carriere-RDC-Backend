@@ -64,6 +64,18 @@ export async function suspendAccount(req: Request, res: Response) {
   res.json(user);
 }
 
+export async function deleteUser(req: Request, res: Response) {
+  const userId = param(req, "id");
+
+  if (req.user?.id === userId) {
+    return res.status(400).json({ error: "Vous ne pouvez pas supprimer votre propre compte." });
+  }
+
+  await prisma.user.delete({ where: { id: userId } });
+
+  res.status(204).send();
+}
+
 export async function listOrganizations(_req: Request, res: Response) {
   const organizations = await prisma.organization.findMany({
     include: { user: { select: { id: true, name: true, email: true, status: true } } },

@@ -34,12 +34,15 @@ export async function applyToJobOffer(req: Request, res: Response) {
     throw new ApiError(409, "Vous avez déjà postulé à cette offre.");
   }
 
-  const atsResult = scoreApplication(jobOffer.atsCriteria as unknown as AtsCriteria, {
-    educationLevel: formAnswers.educationLevel,
-    experienceYears: formAnswers.experienceYears,
-    languages: formAnswers.languages,
-    skills: formAnswers.skills,
-  });
+  const { result: atsResult, score: atsScore } = scoreApplication(
+    jobOffer.atsCriteria as unknown as AtsCriteria,
+    {
+      educationLevel: formAnswers.educationLevel,
+      experienceYears: formAnswers.experienceYears,
+      languages: formAnswers.languages,
+      skills: formAnswers.skills,
+    }
+  );
 
   const application = await prisma.application.create({
     data: {
@@ -48,6 +51,7 @@ export async function applyToJobOffer(req: Request, res: Response) {
       formAnswers,
       cvUrl: `/uploads/cv/${req.file.filename}`,
       atsResult,
+      atsScore,
     },
   });
 
@@ -67,9 +71,23 @@ export async function listApplicationsForJobOffer(req: Request, res: Response) {
 
   const applications = await prisma.application.findMany({
     where: { jobOfferId: param(req, "id") },
-    include: { candidate: { select: { id: true, name: true, email: true } } },
-    // "Correspond" en tête de liste, comme décrit dans le cadrage (section 5.3).
-    orderBy: [{ atsResult: "asc" }, { createdAt: "desc" }],
+    include: {
+      candidate: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          candidateProfile: {
+            include: {
+              documents: { orderBy: { createdAt: "desc" } },
+              experiences: { orderBy: { startDate: "desc" } },
+            },
+          },
+        },
+      },
+    },
+    // Meilleur pourcentage de correspondance en tête de liste (section 5.3 du cadrage).
+    orderBy: [{ atsScore: "desc" }, { createdAt: "desc" }],
   });
 
   res.json(applications);

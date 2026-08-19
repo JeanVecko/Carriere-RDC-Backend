@@ -7,6 +7,12 @@ import { uploadCv } from "@/middleware/upload";
 export const jobOfferRouter = Router();
 
 jobOfferRouter.get("/", jobOfferController.listJobOffers);
+jobOfferRouter.get(
+  "/mine",
+  requireAuth,
+  requireRole("COMPANY", "ADMIN"),
+  jobOfferController.listMyJobOffers
+);
 jobOfferRouter.get("/:id", jobOfferController.getJobOffer);
 jobOfferRouter.post(
   "/",
