@@ -154,6 +154,7 @@ model JobOffer {
   city                   String
   contractType           String
   description            String
+  documentUrl            String?
   missions               Json          @default("[]")
   atsCriteria            Json
   preScreeningQuestions  Json          @default("[]")
@@ -201,6 +202,7 @@ model Training {
   sessionDates   Json             @default("[]")
   price          String?
   location       String?
+  posterUrl      String?
   status         ListingStatus    @default(DRAFT)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt

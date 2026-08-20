@@ -101,6 +101,53 @@ export async function createJobOffer(req: Request, res: Response) {
   res.status(201).json(jobOffer);
 }
 
+const jobOfferDocumentSchema = z.object({
+  title: z.string().min(3),
+  sector: z.string(),
+  city: z.string(),
+  contractType: z.string(),
+  deadline: z.coerce.date().optional(),
+  status: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT"),
+  keySkills: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value
+        ? value.split(",").map((skill) => skill.trim()).filter(Boolean)
+        : []
+    ),
+});
+
+export async function createJobOfferFromDocument(req: Request, res: Response) {
+  if (!req.file) {
+    throw new ApiError(400, "Le document PDF de l'offre est requis.");
+  }
+
+  const { keySkills, ...data } = jobOfferDocumentSchema.parse(req.body);
+  const organizationId = await resolveOrganizationId(req);
+
+  const jobOffer = await prisma.jobOffer.create({
+    data: {
+      ...data,
+      description:
+        "Le détail de cette offre est disponible dans le document PDF joint par l'entreprise.",
+      documentUrl: `/uploads/offers/${req.file.filename}`,
+      atsCriteria: {
+        minEducationLevel: "Sans diplôme",
+        minExperienceYears: 0,
+        requiredLanguages: [],
+        keySkills,
+        niceToHave: [],
+      },
+      organizationId,
+      publishedAt: data.status === "PUBLISHED" ? new Date() : null,
+      publishedByAdmin: req.user!.role === "ADMIN",
+    },
+  });
+
+  res.status(201).json(jobOffer);
+}
+
 async function assertOwnership(req: Request, jobOfferId: string) {
   const jobOffer = await prisma.jobOffer.findUnique({
     where: { id: jobOfferId },

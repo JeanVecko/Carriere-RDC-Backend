@@ -11,7 +11,10 @@ const trainingSchema = z.object({
   program: z.string(),
   duration: z.string(),
   modality: z.enum(["ONSITE", "ONLINE", "HYBRID"]),
-  sessionDates: z.array(z.string()).default([]),
+  sessionDates: z
+    .array(z.string())
+    .or(z.string().transform((v) => (v ? JSON.parse(v) : [])))
+    .default([]),
   price: z.string().optional(),
   location: z.string().optional(),
   status: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT"),
@@ -47,6 +50,20 @@ export async function listTrainings(req: Request, res: Response) {
   res.json(trainings);
 }
 
+export async function listMyTrainings(req: Request, res: Response) {
+  const organization = await prisma.organization.findUnique({
+    where: { userId: req.user!.id },
+  });
+  if (!organization) throw new ApiError(404, "Aucune organisation associée à ce compte.");
+
+  const trainings = await prisma.training.findMany({
+    where: { organizationId: organization.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  res.json(trainings);
+}
+
 export async function getTraining(req: Request, res: Response) {
   const training = await prisma.training.findUnique({
     where: { id: param(req, "id") },
@@ -60,7 +77,13 @@ export async function createTraining(req: Request, res: Response) {
   const data = trainingSchema.parse(req.body);
   const organizationId = await resolveOrganizationId(req);
 
-  const training = await prisma.training.create({ data: { ...data, organizationId } });
+  const training = await prisma.training.create({
+    data: {
+      ...data,
+      posterUrl: req.file ? `/uploads/posters/${req.file.filename}` : undefined,
+      organizationId,
+    },
+  });
   res.status(201).json(training);
 }
 
@@ -75,6 +98,12 @@ export async function updateTraining(req: Request, res: Response) {
   }
 
   const data = trainingSchema.partial().parse(req.body);
-  const updated = await prisma.training.update({ where: { id: param(req, "id") }, data });
+  const updated = await prisma.training.update({
+    where: { id: param(req, "id") },
+    data: {
+      ...data,
+      posterUrl: req.file ? `/uploads/posters/${req.file.filename}` : undefined,
+    },
+  });
   res.json(updated);
 }
