@@ -24,16 +24,30 @@ export async function listUsers(req: Request, res: Response) {
 }
 
 export async function getStats(_req: Request, res: Response) {
-  const [candidateCount, companyCount, trainingOrgCount, pendingCount, totalVisits] =
-    await Promise.all([
-      prisma.user.count({ where: { role: "CANDIDATE" } }),
-      prisma.user.count({ where: { role: "COMPANY" } }),
-      prisma.user.count({ where: { role: "TRAINING_ORG" } }),
-      prisma.user.count({ where: { status: "PENDING" } }),
-      prisma.siteVisit.count(),
-    ]);
+  const [
+    candidateCount,
+    companyCount,
+    trainingOrgCount,
+    pendingCount,
+    totalVisits,
+    unreadMessages,
+  ] = await Promise.all([
+    prisma.user.count({ where: { role: "CANDIDATE" } }),
+    prisma.user.count({ where: { role: "COMPANY" } }),
+    prisma.user.count({ where: { role: "TRAINING_ORG" } }),
+    prisma.user.count({ where: { status: "PENDING" } }),
+    prisma.siteVisit.count(),
+    prisma.contactMessage.count({ where: { isRead: false } }),
+  ]);
 
-  res.json({ candidateCount, companyCount, trainingOrgCount, pendingCount, totalVisits });
+  res.json({
+    candidateCount,
+    companyCount,
+    trainingOrgCount,
+    pendingCount,
+    totalVisits,
+    unreadMessages,
+  });
 }
 
 export async function listPendingAccounts(_req: Request, res: Response) {
