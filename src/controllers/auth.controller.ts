@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, signToken, verifyPassword } from "@/lib/auth";
 import { ApiError } from "@/middleware/error-handler";
+import { env } from "@/config/env";
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -61,6 +62,39 @@ export async function login(req: Request, res: Response) {
 
   res.json({
     token,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status },
+  });
+}
+
+const bootstrapAdminSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+export async function bootstrapAdmin(req: Request, res: Response) {
+  if (!env.adminBootstrapSecret || req.header("x-bootstrap-secret") !== env.adminBootstrapSecret) {
+    throw new ApiError(404, "Introuvable.");
+  }
+
+  const data = bootstrapAdminSchema.parse(req.body);
+
+  const existing = await prisma.user.findUnique({ where: { email: data.email } });
+  if (existing) {
+    throw new ApiError(409, "Un compte existe déjà avec cet e-mail.");
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      passwordHash: await hashPassword(data.password),
+      role: "ADMIN",
+      status: "VALIDATED",
+    },
+  });
+
+  res.status(201).json({
     user: { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status },
   });
 }
